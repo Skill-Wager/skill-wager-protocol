@@ -1,6 +1,7 @@
 const { WebSocketServer } = require('ws');
 
 const PORT = 8081;
+const WS_OPEN = 1;
 
 // Minimal Venue Daemon Implementation
 // Provides a local WebSocket endpoint to simulate physical node connectivity
@@ -10,6 +11,10 @@ const wss = new WebSocketServer({ port: PORT });
 
 wss.on('connection', function connection(ws) {
   console.log('[WSS] Client connected to Venue Daemon.');
+
+  ws.on('error', (err) => {
+      console.error('[WSS] Socket error:', err.message);
+  });
   
   ws.on('message', function message(data) {
     try {
@@ -30,10 +35,12 @@ wss.on('connection', function connection(ws) {
       console.log('[WSS] Client disconnected.');
   });
 
-  ws.send(JSON.stringify({ 
-      action: 'CONNECTION_ESTABLISHED', 
-      nodeId: 'DEV-NODE-LOCAL' 
-  }));
+  if (ws.readyState === WS_OPEN) {
+      ws.send(JSON.stringify({ 
+          action: 'CONNECTION_ESTABLISHED', 
+          nodeId: 'DEV-NODE-LOCAL' 
+      }));
+  }
 });
 
 console.log(`[WSS] Daemon listening on ws://localhost:${PORT}`);
