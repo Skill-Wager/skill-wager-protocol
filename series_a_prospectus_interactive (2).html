@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skill Wager | Series A Prospectus</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Rajdhani:wght@500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Rajdhani', 'sans-serif'],
+                        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+                    },
+                    colors: {
+                        sw: {
+                            bg: '#050505',
+                            panel: '#111111',
+                            border: '#27272A',
+                            cyan: '#00F0FF',
+                            magenta: '#FF0055',
+                            emerald: '#00FF66',
+                            amber: '#FFB800',
+                            purple: '#7000FF',
+                            gold: '#FFB800'
+                        }
+                    },
+                    animation: {
+                        'blob': 'blob 10s infinite alternate',
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        blob: {
+                            '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                            '50%': { transform: 'translate(30px, -50px) scale(1.1)' },
+                            '100%': { transform: 'translate(-20px, 20px) scale(0.9)' }
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-20px)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { background-color: #050505; color: #E4E4E7; overflow-x: hidden; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #050505; }
+        ::-webkit-scrollbar-thumb { background: #3F3F46; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #00F0FF; }
+        
+        .glass-panel {
+            background: rgba(17, 17, 17, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .text-glow-cyan { text-shadow: 0 0 20px rgba(0, 240, 255, 0.6); }
+        .text-glow-gold { text-shadow: 0 0 20px rgba(255, 184, 0, 0.6); }
+        
+        /* 
+         * REPAIRED REVEAL ANIMATIONS 
+         * Hero elements use pure CSS to avoid black-screen on reload.
+         */
+        .hero-reveal {
+            animation: heroFadeIn 1s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        
+        @keyframes heroFadeIn {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Standard scroll reveals */
+        .reveal { 
+            opacity: 0; 
+            transform: translateY(40px); 
+            transition: opacity 0.8s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1); 
+        }
+        .reveal.active { 
+            opacity: 1; 
+            transform: translateY(0); 
+        }
+
+        .delay-100 { animation-delay: 0.1s; transition-delay: 0.1s; }
+        .delay-200 { animation-delay: 0.2s; transition-delay: 0.2s; }
+        .delay-300 { animation-delay: 0.3s; transition-delay: 0.3s; }
+
+        .stat-card { transition: all 0.3s ease; }
+        .stat-card:hover { 
+            transform: translateY(-5px); 
+            box-shadow: 0 20px 40px -10px rgba(0, 240, 255, 0.15); 
+            border-color: rgba(0, 240, 255, 0.4); 
+            background: rgba(17, 17, 17, 0.8);
+        }
+        
+        /* Grid Background */
+        .bg-grid {
+            background-size: 50px 50px;
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            mask-image: radial-gradient(circle at center, black, transparent 80%);
+            -webkit-mask-image: radial-gradient(circle at center, black, transparent 80%);
+        }
+
+        /* Toast Notifications */
+        #toast-container { position: fixed; top: 80px; right: 20px; z-index: 100; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+        .toast { padding: 12px 20px; border-radius: 8px; color: white; font-size: 0.875rem; font-weight: 500; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 12px; animation: slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards; background: #111; border-left: 4px solid; pointer-events: auto;}
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    </style>
+</head>
+<body class="antialiased selection:bg-sw-cyan selection:text-black">
+
+    <!-- Restricted Access Banner -->
+    <div class="bg-sw-gold text-black text-[10px] sm:text-xs font-bold uppercase tracking-widest text-center py-2 px-4 z-50 relative shadow-[0_0_15px_rgba(255,184,0,0.3)]">
+        <i class="fa-solid fa-lock mr-2"></i> Restricted Offering: Sec. 506(c) Accredited Investors & Reg S Non-US Persons Only
+    </div>
+
+    <!-- Navigation -->
+    <nav class="fixed w-full z-40 glass-panel border-b border-sw-border/50 transition-all duration-300 top-[32px] sm:top-[34px]" id="navbar">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            <div class="flex items-center gap-3 cursor-pointer" onclick="window.scrollTo(0,0)">
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-sw-purple to-sw-cyan flex items-center justify-center shadow-[0_0_15px_rgba(0,240,255,0.4)]">
+                    <i class="fa-solid fa-gamepad text-white text-xl"></i>
+                </div>
+                <span class="font-display font-bold text-2xl tracking-widest text-white">SKILL WAGER</span>
+            </div>
+            
+            <div class="hidden md:flex gap-8 text-sm font-bold tracking-wider font-display uppercase text-gray-400">
+                <a href="#thesis" class="hover:text-white transition">Thesis</a>
+                <a href="#technology" class="hover:text-white transition">Technology</a>
+                <a href="#economics" class="hover:text-white transition">Tokenomics</a>
+                <a href="#ask" class="text-sw-cyan hover:text-white transition drop-shadow-[0_0_8px_rgba(0,240,255,0.5)]">The Offering</a>
+            </div>
+
+            <div class="flex items-center gap-4">
+                 <button onclick="handleConnect()" id="btn-connect" class="bg-white text-black px-5 py-2.5 rounded-lg font-bold text-sm hover:bg-gray-200 transition shadow-[0_0_15px_rgba(255,255,255,0.2)] flex items-center gap-2 active:scale-95">
+                    <i class="fa-solid fa-wallet"></i> <span class="hidden sm:inline">Connect Wallet</span><span class="sm:hidden">Connect</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="relative min-h-[100svh] flex items-center pt-24 pb-12 overflow-hidden bg-[#020202]">
+        <div class="absolute inset-0 bg-grid pointer-events-none"></div>
+        
+        <!-- Abstract Background Blobs -->
+        <div class="absolute top-1/4 left-1/4 w-[30rem] h-[30rem] bg-sw-cyan/10 rounded-full mix-blend-screen filter blur-[100px] animate-blob pointer-events-none"></div>
+        <div class="absolute top-1/3 right-1/4 w-[25rem] h-[25rem] bg-sw-amber/10 rounded-full mix-blend-screen filter blur-[100px] animate-blob delay-1000 pointer-events-none"></div>
+        <div class="absolute bottom-1/4 left-1/2 w-[35rem] h-[35rem] bg-sw-magenta/10 rounded-full mix-blend-screen filter blur-[120px] animate-blob delay-2000 pointer-events-none"></div>
+
+        <div class="relative z-10 max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center w-full">
+            <div>
+                <div class="hero-reveal inline-flex items-center gap-2 px-4 py-2 rounded-full border border-sw-cyan/30 bg-sw-cyan/10 text-sw-cyan text-xs font-mono font-bold tracking-widest mb-8 shadow-[0_0_15px_rgba(0,240,255,0.15)]">
+                    <span class="w-2 h-2 rounded-full bg-sw-cyan animate-pulse"></span> CONFIDENTIAL MEMORANDUM
+                </div>
+                <h1 class="hero-reveal delay-100 text-5xl sm:text-7xl lg:text-8xl font-display font-extrabold text-white mb-6 leading-[1.05] tracking-tight uppercase">
+                    The Layer-2 <br>
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-sw-cyan to-sw-emerald text-glow-cyan">Edge Oracle</span>
+                </h1>
+                <p class="hero-reveal delay-200 text-lg sm:text-xl text-gray-400 mb-10 max-w-lg leading-relaxed font-light">
+                    Transforming every bar TV and arcade cabinet globally into a decentralized, real-money eSports arena—without touching fiat or altering legacy game code.
+                </p>
+                <div class="hero-reveal delay-300 flex flex-wrap gap-4">
+                    <a href="#thesis" class="px-8 py-4 rounded-xl bg-sw-cyan text-black font-bold text-sm uppercase tracking-widest hover:bg-white transition shadow-[0_0_20px_rgba(0,240,255,0.4)] active:scale-95 flex items-center gap-2">
+                        Explore The Thesis <i class="fa-solid fa-arrow-down"></i>
+                    </a>
+                    <a href="#ask" class="px-8 py-4 rounded-xl border border-gray-700 bg-black/50 text-white font-bold text-sm uppercase tracking-widest hover:bg-gray-800 hover:border-gray-500 transition backdrop-blur-md active:scale-95 flex items-center gap-2">
+                        View SAFT Terms <i class="fa-solid fa-file-contract"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Conceptual Visual -->
+            <div class="hidden lg:block relative h-[600px] hero-reveal delay-300">
+                <div class="absolute inset-0 flex items-center justify-center animate-float">
+                    <!-- Central Smart Contract -->
+                    <div class="w-40 h-40 bg-sw-panel border border-sw-cyan rounded-3xl flex flex-col items-center justify-center shadow-[0_0_60px_rgba(0,240,255,0.2)] z-20 relative overflow-hidden group">
+                        <div class="absolute inset-0 bg-gradient-to-b from-sw-cyan/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <i class="fa-brands fa-ethereum text-5xl text-sw-cyan mb-3 drop-shadow-[0_0_10px_rgba(0,240,255,0.8)]"></i>
+                        <span class="text-[11px] font-mono font-bold text-white uppercase tracking-widest">OmniEscrow</span>
+                    </div>
+                    
+                    <!-- Nodes Orbiting -->
+                    <div class="absolute w-[450px] h-[450px] border border-dashed border-gray-700/50 rounded-full animate-[spin_40s_linear_infinite] z-10">
+                        <!-- Venue Node -->
+                        <div class="absolute -top-8 left-1/2 -translate-x-1/2 w-16 h-16 bg-black border border-sw-amber rounded-xl flex flex-col items-center justify-center -animate-[spin_40s_linear_infinite] shadow-[0_0_20px_rgba(255,184,0,0.2)]">
+                            <i class="fa-solid fa-server text-sw-amber mb-1 text-lg"></i>
+                            <span class="text-[8px] font-mono text-gray-400 uppercase tracking-widest">Node</span>
+                        </div>
+                        <!-- Player ePurse -->
+                        <div class="absolute -bottom-8 left-1/2 -translate-x-1/2 w-16 h-16 bg-black border border-sw-magenta rounded-xl flex flex-col items-center justify-center -animate-[spin_40s_linear_infinite] shadow-[0_0_20px_rgba(255,0,85,0.2)]">
+                            <i class="fa-solid fa-mobile-screen text-sw-magenta mb-1 text-lg"></i>
+                            <span class="text-[8px] font-mono text-gray-400 uppercase tracking-widest">Player</span>
+                        </div>
+                        <!-- Publisher Registry -->
+                        <div class="absolute top-1/2 -left-8 -translate-y-1/2 w-16 h-16 bg-black border border-sw-purple rounded-xl flex flex-col items-center justify-center -animate-[spin_40s_linear_infinite] shadow-[0_0_20px_rgba(112,0,255,0.2)]">
+                            <i class="fa-solid fa-code text-sw-purple mb-1 text-lg"></i>
+                            <span class="text-[8px] font-mono text-gray-400 uppercase tracking-widest">Dev IP</span>
+                        </div>
+                        <!-- Liquidity Pool -->
+                        <div class="absolute top-1/2 -right-8 -translate-y-1/2 w-16 h-16 bg-black border border-sw-emerald rounded-xl flex flex-col items-center justify-center -animate-[spin_40s_linear_infinite] shadow-[0_0_20px_rgba(0,255,102,0.2)]">
+                            <i class="fa-solid fa-water text-sw-emerald mb-1 text-lg"></i>
+                            <span class="text-[8px] font-mono text-gray-400 uppercase tracking-widest">AMM</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- The Problem & Solution -->
+    <section id="thesis" class="py-24 bg-[#080808] border-t border-sw-border">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-20 reveal">
+                <p class="text-sw-magenta font-mono text-sm uppercase tracking-widest font-bold mb-2">The Market Opportunity</p>
+                <h2 class="text-4xl lg:text-5xl font-display font-bold text-white mb-6">The Web3 / Arcade Disconnect</h2>
+                <p class="text-gray-400 max-w-2xl mx-auto text-lg leading-relaxed">Physical social gaming lacks modern monetization, while Web3 gaming is plagued by high-friction onboarding and catastrophic network latency.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
+                <div class="glass-panel p-8 rounded-3xl reveal stat-card border border-sw-border">
+                    <div class="w-16 h-16 bg-sw-magenta/10 border border-sw-magenta/30 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
+                        <i class="fa-solid fa-ghost text-3xl text-sw-magenta"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">The Arcade is Dead</h3>
+                    <p class="text-sm text-gray-400 leading-relaxed">Physical venues rely entirely on F&B sales. Classic arcade machines are loss-leaders with zero modern monetization capability. They consume space without generating direct yield.</p>
+                </div>
+                <div class="glass-panel p-8 rounded-3xl reveal delay-100 stat-card border border-sw-border">
+                    <div class="w-16 h-16 bg-sw-amber/10 border border-sw-amber/30 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
+                        <i class="fa-solid fa-link-slash text-3xl text-sw-amber"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Web3 is Broken</h3>
+                    <p class="text-sm text-gray-400 leading-relaxed">Mainstream players reject high gas fees, seed phrases, and complex wallets. Furthermore, on-chain execution is fundamentally too slow for 60Hz competitive eSports.</p>
+                </div>
+                <div class="glass-panel p-8 rounded-3xl reveal delay-200 stat-card border border-sw-border">
+                    <div class="w-16 h-16 bg-sw-purple/10 border border-sw-purple/30 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
+                        <i class="fa-solid fa-gavel text-3xl text-sw-purple"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">The Liability Trap</h3>
+                    <p class="text-sm text-gray-400 leading-relaxed">Venues and developers cannot legally host local real-money tournaments without triggering massive casino compliance costs and state-level regulatory crackdowns.</p>
+                </div>
+            </div>
+
+            <!-- The Solution -->
+            <div id="technology" class="glass-panel p-10 lg:p-16 rounded-[2.5rem] border border-sw-cyan/30 relative overflow-hidden reveal shadow-[0_0_50px_rgba(0,240,255,0.05)]">
+                <div class="absolute top-0 right-0 w-full md:w-1/2 h-full bg-gradient-to-l from-sw-cyan/10 to-transparent pointer-events-none"></div>
+                <div class="absolute -right-20 -bottom-20 opacity-5 pointer-events-none">
+                    <i class="fa-solid fa-microchip text-[300px]"></i>
+                </div>
+
+                <div class="relative z-10">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded bg-sw-cyan/10 border border-sw-cyan/30 text-sw-cyan text-xs font-mono tracking-widest mb-6 uppercase font-bold">
+                        <i class="fa-solid fa-bolt"></i> Proprietary Tech Stack
+                    </div>
+                    <h2 class="text-3xl lg:text-4xl font-display font-bold text-white mb-6 leading-tight">The Solution: Trustless,<br>Air-Gapped Matchmaking</h2>
+                    <p class="text-gray-400 text-lg max-w-3xl mb-12 leading-relaxed">
+                        We systematically separated the controller, the game logic, and the money. Players use their phones to lock Layer-2 smart contracts via meta-transactions. The game runs on physical, air-gapped venue hardware. Payouts are routed autonomously based on cryptographic RAM-scraping.
+                    </p>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                        <div class="border-l-2 border-sw-cyan pl-5 hover:border-l-4 transition-all">
+                            <div class="text-3xl font-mono font-bold text-white mb-2 shadow-black drop-shadow-md">0<span class="text-lg text-sw-cyan">ms</span></div>
+                            <p class="text-[10px] text-gray-400 uppercase tracking-widest font-bold leading-tight">Network Latency<br>(Local WSS Bypass)</p>
+                        </div>
+                        <div class="border-l-2 border-sw-emerald pl-5 hover:border-l-4 transition-all">
+                            <div class="text-3xl font-mono font-bold text-white mb-2 shadow-black drop-shadow-md">100<span class="text-lg text-sw-emerald">%</span></div>
+                            <p class="text-[10px] text-gray-400 uppercase tracking-widest font-bold leading-tight">Venue Legal Immunity<br>(Non-Custodial)</p>
+                        </div>
+                        <div class="border-l-2 border-sw-magenta pl-5 hover:border-l-4 transition-all">
+                            <div class="text-3xl font-mono font-bold text-white mb-2 shadow-black drop-shadow-md">Zero</div>
+                            <p class="text-[10px] text-gray-400 uppercase tracking-widest font-bold leading-tight">Code Changes Reqd.<br>For Tier A IP</p>
+                        </div>
+                        <div class="border-l-2 border-sw-amber pl-5 hover:border-l-4 transition-all">
+                            <div class="text-3xl font-mono font-bold text-white mb-2 shadow-black drop-shadow-md">Gasless</div>
+                            <p class="text-[10px] text-gray-400 uppercase tracking-widest font-bold leading-tight">Meta-Transaction<br>Player UX</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tokenomics & Economics -->
+    <section id="economics" class="py-24 bg-[#030509] border-t border-sw-border overflow-hidden">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-20 reveal">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded bg-sw-emerald/10 border border-sw-emerald/30 text-sw-emerald text-xs font-mono font-bold tracking-widest mb-4">
+                    <i class="fa-solid fa-chart-pie"></i> ECONOMIC ENGINE
+                </div>
+                <h2 class="text-4xl lg:text-5xl font-display font-bold text-white mb-6">Volume-Based Deflationary Economics</h2>
+                <p class="text-gray-400 max-w-2xl mx-auto text-lg leading-relaxed">Powered by the $PLAY token, the ecosystem autonomously routes yield to infrastructure providers while mathematically reducing overall supply as network handle scales.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                <!-- Pie Chart Visual -->
+                <div class="relative flex justify-center reveal">
+                    <div class="w-72 h-72 sm:w-80 sm:h-80 rounded-full border-[12px] border-sw-panel relative flex items-center justify-center shadow-[0_0_60px_rgba(0,0,0,0.8)] bg-sw-bg">
+                        <!-- CSS Pie Chart representation for the 7% Rake -->
+                        <div class="absolute inset-0 rounded-full transition-transform duration-1000 hover:scale-105" style="background: conic-gradient(#00FF66 0% 43%, #7000FF 43% 71.5%, #FFB800 71.5% 100%); opacity: 0.85; filter: drop-shadow(0 0 10px rgba(0,255,102,0.2));"></div>
+                        <div class="absolute inset-3 rounded-full bg-sw-bg flex flex-col items-center justify-center shadow-inner border border-gray-800">
+                            <span class="text-5xl sm:text-6xl font-display font-bold text-white tracking-tight">7%</span>
+                            <span class="text-[10px] text-gray-500 font-mono uppercase tracking-widest mt-2 font-bold">Global Rake</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Labels -->
+                    <div class="absolute top-0 right-0 sm:right-10 bg-sw-panel p-3 rounded-xl border border-sw-border shadow-xl transform translate-x-4 -translate-y-4 hover:border-sw-emerald transition-colors">
+                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1 flex items-center gap-2"><div class="w-2 h-2 bg-sw-emerald rounded-full"></div> Platform Treasury</p>
+                        <p class="text-sw-emerald font-mono font-bold text-xl leading-none">3.0%</p>
+                    </div>
+                    <div class="absolute bottom-10 -right-4 sm:-right-2 bg-sw-panel p-3 rounded-xl border border-sw-border shadow-xl transform translate-x-4 translate-y-4 hover:border-sw-purple transition-colors">
+                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1 flex items-center gap-2"><div class="w-2 h-2 bg-sw-purple rounded-full"></div> Publisher / Dev IP</p>
+                        <p class="text-sw-purple font-mono font-bold text-xl leading-none">2.0%</p>
+                    </div>
+                    <div class="absolute bottom-10 -left-4 sm:left-4 bg-sw-panel p-3 rounded-xl border border-sw-border shadow-xl transform -translate-x-4 translate-y-4 hover:border-sw-amber transition-colors">
+                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1 flex items-center gap-2"><div class="w-2 h-2 bg-sw-amber rounded-full"></div> Venue Node Host</p>
+                        <p class="text-sw-amber font-mono font-bold text-xl leading-none">2.0%</p>
+                    </div>
+                </div>
+
+                <div class="space-y-6 reveal delay-200">
+                    <div class="glass-panel p-6 rounded-2xl border-l-4 border-l-sw-cyan hover:bg-white/5 transition-colors">
+                        <h4 class="text-xl font-bold text-white mb-2 flex items-center gap-2"><i class="fa-solid fa-fire text-sw-cyan"></i> The Deflationary Burn</h4>
+                        <p class="text-sm text-gray-400 leading-relaxed">
+                            The Coin-Op Alliance DAO executes a quarterly smart contract that takes <strong>20% of all accrued Treasury Rake and permanently burns it</strong>. As network handle scales globally, the $PLAY token becomes mathematically scarcer.
+                        </p>
+                    </div>
+                    <div class="glass-panel p-6 rounded-2xl border-l-4 border-l-sw-purple hover:bg-white/5 transition-colors">
+                        <h4 class="text-xl font-bold text-white mb-2 flex items-center gap-2"><i class="fa-solid fa-unlock-keyhole text-sw-purple"></i> Unlocking $10B+ in Dormant IP</h4>
+                        <p class="text-sm text-gray-400 leading-relaxed">
+                            By offering a perpetual 2% volume royalty, we incentivize Tier A legacy publishers to drop their ROM manifests into our portal, legally monetizing their 30-year-old catalogs via L2 Smart Contracts without writing a single line of Web3 code.
+                        </p>
+                    </div>
+                    <div class="glass-panel p-6 rounded-2xl border-l-4 border-l-sw-emerald hover:bg-white/5 transition-colors">
+                        <h4 class="text-xl font-bold text-white mb-2 flex items-center gap-2"><i class="fa-solid fa-chart-line text-sw-emerald"></i> Spectator Hedging (AMM)</h4>
+                        <p class="text-sm text-gray-400 leading-relaxed">
+                            The network features a Parimutuel Automated Market Maker. Viewers watching major tournaments can stake $PLAY on the outcome, providing deep liquidity pools and driving engagement for non-players, opening the TAM beyond active gamers.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SAFT Terms & Offering -->
+    <section id="ask" class="py-24 bg-[#0A0A0A] border-t border-sw-border relative overflow-hidden">
+        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-sw-gold/10 via-transparent to-transparent pointer-events-none"></div>
+        
+        <div class="max-w-7xl mx-auto px-6 relative z-10">
+            <div class="text-center mb-16 reveal">
+                <i class="fa-solid fa-file-signature text-5xl text-sw-gold mb-6 drop-shadow-[0_0_15px_rgba(255,184,0,0.5)]"></i>
+                <h2 class="text-4xl lg:text-5xl font-display font-bold text-white mb-6">Series A: SAFT Offering</h2>
+                <p class="text-gray-400 max-w-2xl mx-auto leading-relaxed">This offering is conducted pursuant to SEC Rule 506(c) of Regulation D and Regulation S. Investment is strictly limited to verified Accredited Investors and Non-US Persons.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+                <!-- Offering Details -->
+                <div class="reveal h-full">
+                    <div class="glass-panel p-8 sm:p-10 rounded-[2rem] border-sw-border h-full flex flex-col shadow-xl">
+                        <h3 class="text-xl font-bold text-white mb-6 uppercase tracking-widest text-sm border-b border-gray-800 pb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-list-ul text-sw-cyan"></i> Term Sheet Summary
+                        </h3>
+                        
+                        <div class="space-y-5 font-mono text-sm flex-grow">
+                            <div class="flex justify-between items-center border-b border-gray-800/50 pb-3 hover:bg-white/5 p-2 rounded transition">
+                                <span class="text-gray-500">Target Raise</span>
+                                <span class="text-sw-success font-bold text-lg">$20,000,000 USD</span>
+                            </div>
+                            <div class="flex justify-between items-center border-b border-gray-800/50 pb-3 hover:bg-white/5 p-2 rounded transition">
+                                <span class="text-gray-500">Instrument</span>
+                                <span class="text-white font-bold">SAFT to $PLAY</span>
+                            </div>
+                            <div class="flex justify-between items-center border-b border-gray-800/50 pb-3 hover:bg-white/5 p-2 rounded transition">
+                                <span class="text-gray-500">Token Price</span>
+                                <span class="text-white font-bold">$0.045 USD / Token</span>
+                            </div>
+                            <div class="flex justify-between items-center border-b border-gray-800/50 pb-3 hover:bg-white/5 p-2 rounded transition">
+                                <span class="text-gray-500">Implied FDV</span>
+                                <span class="text-white font-bold">$45,000,000 USD</span>
+                            </div>
+                            <div class="flex justify-between items-center border-b border-gray-800/50 pb-3 hover:bg-white/5 p-2 rounded transition">
+                                <span class="text-gray-500">Minimum Ticket</span>
+                                <span class="text-white font-bold">$100,000 USD</span>
+                            </div>
+                            <div class="flex justify-between items-center border-b border-gray-800/50 pb-3 hover:bg-white/5 p-2 rounded transition">
+                                <span class="text-gray-500">Vesting Schedule</span>
+                                <span class="text-white text-right leading-tight font-bold">6-mo cliff post-TGE,<br>then 24-mo linear.</span>
+                            </div>
+                            <div class="flex justify-between items-center hover:bg-white/5 p-2 rounded transition">
+                                <span class="text-gray-500">Network Delivery</span>
+                                <span class="text-sw-cyan font-bold bg-sw-cyan/10 px-2 py-1 rounded">Polygon (ERC-20)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Access / CTA -->
+                <div class="reveal delay-100 h-full">
+                    <div class="glass-panel p-8 sm:p-10 rounded-[2rem] border-sw-gold/40 shadow-[0_0_50px_rgba(255,184,0,0.08)] h-full flex flex-col justify-center text-center relative overflow-hidden bg-gradient-to-b from-sw-panel to-black">
+                        <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-sw-gold via-sw-primary to-sw-success"></div>
+                        
+                        <div class="w-20 h-20 bg-black border border-sw-gold/50 rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-[0_0_30px_rgba(255,184,0,0.2)] relative">
+                            <div class="absolute inset-0 rounded-2xl border border-sw-gold animate-ping opacity-20"></div>
+                            <i class="fa-solid fa-vault text-3xl text-sw-gold"></i>
+                        </div>
+                        <h3 class="text-3xl font-display font-bold text-white mb-4">Access the Data Room</h3>
+                        <p class="text-gray-400 text-sm mb-8 leading-relaxed max-w-sm mx-auto">
+                            The virtual data room contains complete smart contract architectures, Tier A `libretro` execution patents, 36-month pro formas, and compliance/KYC frameworks.
+                        </p>
+                        
+                        <div class="bg-black/80 border border-gray-800 rounded-xl p-5 mb-8 text-left max-w-sm mx-auto w-full shadow-inner">
+                            <p class="text-xs text-gray-400 font-mono mb-3 flex items-center"><i class="fa-solid fa-shield-check text-sw-success mr-3 text-lg"></i> Requires Parallel Markets KYC</p>
+                            <p class="text-xs text-gray-400 font-mono mb-3 flex items-center"><i class="fa-solid fa-file-invoice text-sw-success mr-3 text-lg"></i> Requires Accredited Investor Status</p>
+                            <p class="text-xs text-gray-400 font-mono flex items-center"><i class="fa-solid fa-signature text-sw-success mr-3 text-lg"></i> Execute SAFT digitally</p>
+                        </div>
+
+                        <a href="self_hosted_portal.html" class="w-full py-4 rounded-xl bg-sw-gold text-black font-bold uppercase tracking-widest hover:bg-white transition-all duration-300 shadow-[0_0_20px_rgba(255,184,0,0.4)] hover:shadow-[0_0_30px_rgba(255,184,0,0.6)] block active:scale-95">
+                            Enter Investor Portal
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer Disclaimers -->
+    <footer class="bg-[#020202] border-t border-sw-border py-12 text-center">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="w-12 h-12 rounded-lg border border-sw-border bg-sw-bg flex items-center justify-center mx-auto mb-6 shadow-lg opacity-50">
+                <i class="fa-solid fa-gem text-sw-gold text-lg"></i>
+            </div>
+            <p class="text-gray-400 text-sm font-display tracking-widest font-bold mb-6 uppercase">Skill Wager Technologies Inc.</p>
+            
+            <p class="text-[10px] text-gray-600 max-w-5xl mx-auto leading-relaxed font-mono text-justify bg-black/50 p-6 rounded-xl border border-gray-900">
+                <strong>CONFIDENTIAL PRIVATE PLACEMENT.</strong> These securities have not been registered with the Securities and Exchange Commission (SEC) or any state securities commission. They are being offered under an exemption from registration pursuant to Rule 506(c) of Regulation D and Regulation S. Investing in early-stage cryptographic networks involves significant risks, including the potential loss of the entire investment. Past performance is not indicative of future results. The $PLAY token is currently in development and is intended to function as a digital utility commodity. The regulatory environment for digital assets is uncertain and rapidly evolving; future regulations could adversely impact the classification and utility of the $PLAY token. This communication contains "forward-looking statements" relating to the platform's future development. For informational purposes only.
+            </p>
+        </div>
+    </footer>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <script>
+        // --- UI Interactions ---
+        function handleConnect() {
+            const btn = document.getElementById('btn-connect');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Connecting...';
+            btn.disabled = true;
+
+            setTimeout(() => {
+                btn.innerHTML = '<i class="fa-solid fa-wallet"></i> 0x8F...4A2B';
+                btn.classList.remove('bg-white', 'text-black');
+                btn.classList.add('bg-sw-panel', 'border', 'border-gray-700', 'text-white');
+                showToast('Web3 Wallet connected successfully.', 'success');
+            }, 1200);
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            
+            let icon = 'fa-info-circle text-sw-cyan';
+            toast.style.borderLeftColor = '#00F0FF';
+            
+            if (type === 'success') {
+                toast.style.borderLeftColor = '#00FF66';
+                icon = 'fa-check-circle text-sw-emerald';
+            }
+
+            toast.innerHTML = `<i class="fa-solid ${icon} text-lg"></i> <span>${message}</span>`;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'fadeOut 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // --- REPAIRED Intersection Observer Logic ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const reveals = document.querySelectorAll('.reveal');
+            
+            // Setup Observer
+            const observer = new IntersectionObserver((entries, obs) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('active');
+                        // Un-observe once revealed to prevent disappearing if scrolled past quickly
+                        obs.unobserve(entry.target); 
+                    }
+                });
+            }, {
+                threshold: 0.1, // Trigger when 10% visible
+                rootMargin: "0px 0px -50px 0px"
+            });
+
+            // Fallback for elements already in viewport (Scroll Restoration Fix)
+            const checkReveal = () => {
+                const windowHeight = window.innerHeight;
+                reveals.forEach(reveal => {
+                    const revealTop = reveal.getBoundingClientRect().top;
+                    // If element is inside or above the viewport, activate immediately
+                    if (revealTop < windowHeight) {
+                        reveal.classList.add('active');
+                    } else {
+                        // Otherwise, let the observer handle it when scrolled to
+                        observer.observe(reveal);
+                    }
+                });
+            };
+
+            // Run immediately on DOM load
+            checkReveal();
+            
+            // Double check on full window load to catch late CSS rendering shifts
+            window.addEventListener('load', checkReveal);
+        });
+    </script>
+</body>
+</html>
