@@ -1,0 +1,1 @@
+async function main() { console.log('Deploying...'); }
