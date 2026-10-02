@@ -1,0 +1,1 @@
+console.log('Booting Cloud Gateway...');
